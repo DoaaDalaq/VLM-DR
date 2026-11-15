@@ -44,6 +44,13 @@ Diabetic retinopathy (DR) grading models often fail when tested on images from *
 | **Text encoder** (CLIP, frozen) | Encodes the grade prompts |
 | **CORAL + KL + Rank losses** | Align image and text and enforce the grade order |
 
+## 🔍 Qualitative results
+
+Grad-CAM visualizations for the five DR grades. **Top:** input fundus image. **Middle:** CLIP-DR. **Bottom:** VLM-DR (ours).
+
+<p align="center">
+  <img src="qualitative.png" width="95%">
+</p>
 ## 🗂️ Datasets
 
 We use five datasets from the **GDRBench** benchmark. The images are **not included** in this repository.
