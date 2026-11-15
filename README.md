@@ -24,3 +24,30 @@ The model is trained with three losses: **cross-modal correlation alignment (COR
 </p>
 
 ## Repository structure
+
+## Installation
+
+```bash
+git clone https://github.com/DoaaDalaq/VLM-DR.git
+cd VLM-DR
+pip install -r requirements.txt
+```
+
+## Datasets
+
+We use five datasets from **GDRBench**: APTOS, DeepDR, IDRiD, Messidor-2 and RLDR.
+The images are **not included** in this repository. Please download them by following the GDRBench instructions:
+👉 https://github.com/chehx/DGDR
+
+## Training and evaluation
+
+*Instructions will be added soon.*
+
+## Acknowledgements
+
+This code builds on [CLIP-DR](https://github.com/Qinkaiyu/CLIP-DR), [OrdinalCLIP](https://github.com/xk-huang/OrdinalCLIP) and [CLIP](https://github.com/openai/CLIP).
+The datasets and splits follow [GDRBench](https://github.com/chehx/DGDR). We thank the authors for making their work available.
+
+## Citation
+
+*Will be added after publication.*
