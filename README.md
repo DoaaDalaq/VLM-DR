@@ -20,10 +20,8 @@ Each DR grade is represented by a learnable text prompt, and a fundus image is g
 The model is trained with three losses: **cross-modal correlation alignment (CORAL)** between image and text embeddings, a **text-to-image KL** loss, and an **ordinal rank** loss.
 
 <p align="center">
-  <img src="assets/framework.png" width="90%">
+  <img src="framework.png" width="90%">
 </p>
-
-## Repository structure
 
 ## Installation
 
