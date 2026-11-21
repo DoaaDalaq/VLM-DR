@@ -22,3 +22,9 @@ env/
 .DS_Store
 Thumbs.db
 .cache/
+
+*.ckpt
+results/
+images/
+__pycache__/
+.cache/

@@ -1,97 +1,59 @@
-<div align="center">
+# VLM-DR: A Domain-Generalizable Vision-Language Model for Diabetic Retinopathy Grading
 
-# 👁️ VLM-DR
+![framework](framework.png)
 
-### A Domain-Generalizable Vision-Language Model for Diabetic Retinopathy Grading
+VLM-DR grades fundus images into the five ICDR grades (No DR, mild, moderate, severe NPDR, PDR) by comparing each image with learnable text prompts of the grades in the CLIP embedding space. It is trained with a cross-modal correlation alignment (CORAL) loss, a text-to-image KL loss and an ordinal rank loss. The implementation builds on the public code of [CLIP-DR](https://github.com/Qinkaiyu/CLIP-DR) and [OrdinalCLIP](https://github.com/xk-huang/OrdinalCLIP).
 
-**Doaa Dalaq · Hamzah Luqman**
-
-King Fahd University of Petroleum and Minerals (KFUPM)
-
-[![Paper](https://img.shields.io/badge/IEEE%20Access-Under%20Review-1f6feb?style=for-the-badge)](#)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#)
-[![PyTorch](https://img.shields.io/badge/PyTorch-Lightning-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](#)
-[![License](https://img.shields.io/badge/License-MIT-2ea44f?style=for-the-badge)](LICENSE)
-
-</div>
-
----
-
-## 📌 Overview
-
-Diabetic retinopathy (DR) grading models often fail when tested on images from **new hospitals, cameras or populations**.
-**VLM-DR** tackles this with a vision–language approach: each DR grade is represented by a **learnable text prompt**, and a fundus image is graded by its **similarity** to these grade representations in the CLIP embedding space.
-
-<p align="center">
-  <img src="framework.png" width="95%">
-</p>
-
-## ✨ Highlights
-
-- 🧠 **Vision–language grading:** fundus images are matched with learnable prompts for the five DR grades.
-- 🔗 **Cross-modal correlation alignment (CORAL):** aligns the structure of the image and text embeddings.
-- 📈 **Ordinal-aware training:** a rank loss keeps the grades in their natural order (No DR → PDR).
-- 🌍 **Domain generalization:** trained on source datasets and tested on an **unseen** dataset (leave-one-domain-out).
-- 🏥 **Five public benchmarks:** APTOS, DeepDR, IDRiD, Messidor-2 and RLDR.
-
-## 🧩 Method at a glance
-
-| Component | Role |
-|---|---|
-| **Image encoder** (CLIP ResNet-50, fine-tuned) | Extracts the fundus image features |
-| **Perceptual adaptation** | Projects the image features into the shared space |
-| **Learnable prompts** (10 context tokens + 1 grade token) | Represent the five DR grades |
-| **Text encoder** (CLIP, frozen) | Encodes the grade prompts |
-| **CORAL + KL + Rank losses** | Align image and text and enforce the grade order |
-
-## 🔍 Qualitative results
-
-Grad-CAM visualizations for the five DR grades. **Top:** input fundus image. **Middle:** CLIP-DR. **Bottom:** VLM-DR (ours).
-
-<p align="center">
-  <img src="qualitative.png" width="95%">
-</p>
-## 🗂️ Datasets
-
-We use five datasets from the **GDRBench** benchmark. The images are **not included** in this repository.
-
-| Dataset | Download |
-|---|---|
-| APTOS | via [GDRBench](https://github.com/chehx/DGDR) |
-| DeepDR | via [GDRBench](https://github.com/chehx/DGDR) |
-| IDRiD | via [GDRBench](https://github.com/chehx/DGDR) |
-| Messidor-2 | via [GDRBench](https://github.com/chehx/DGDR) |
-| RLDR | via [GDRBench](https://github.com/chehx/DGDR) |
-
-## ⚙️ Installation
-
+## Installation
 ```bash
 git clone https://github.com/DoaaDalaq/VLM-DR.git
 cd VLM-DR
 pip install -r requirements.txt
+git clone https://github.com/xk-huang/OrdinalCLIP.git
+export PYTHONPATH=$PYTHONPATH:$(pwd)/OrdinalCLIP
 ```
 
-## 🚀 Training and evaluation
+## Data
+Images are not included. Download APTOS, DeepDR, IDRiD, Messidor-2, RLDR and FGADR following the [GDRBench](https://github.com/chehx/DGDR) benchmark and place them under `images/` (e.g. `images/APTOS/...`).
 
-> 🛠️ Code and instructions will be released soon.
+- `splits/dg/`: domain generalization splits (GDRBench). `X_train.txt` is used for training and `X_crossval.txt` for validation when `X` is a source domain; `X_crossval.txt` is the test set when `X` is the target. FGADR is used only as a source domain.
+- `splits/within/`: our within-domain splits (random, image level, 80/10/10).
 
-## 🙏 Acknowledgements
-
-This code builds on [CLIP-DR](https://github.com/Qinkaiyu/CLIP-DR), [OrdinalCLIP](https://github.com/xk-huang/OrdinalCLIP) and [CLIP](https://github.com/openai/CLIP).
-The datasets follow [GDRBench](https://github.com/chehx/DGDR). We thank the authors for making their work available.
-
-## 📖 Citation
-
-```bibtex
-@article{dalaq2026vlmdr,
-  title   = {VLM-DR: A Domain-Generalizable Vision-Language Model for Diabetic Retinopathy Grading},
-  author  = {Dalaq, Doaa and Luqman, Hamzah},
-  journal = {IEEE Access},
-  year    = {2026},
-  note    = {Under review}
-}
+Build the leave-one-domain-out files for a target domain:
+```bash
+bash make_dg_splits.sh APTOS      # or DEEPDR, IDRID, MESSIDOR, RLDR
 ```
 
-## 📬 Contact
+## Training (leave-one-domain-out)
+Each target domain is initialized from the corresponding CLIP-DR checkpoint (see the CLIP-DR repository), placed in `checkpoints/clipdr/`.
+```bash
+T=APTOS
+python run_train.py -c configs/VLM-DR.yaml --output_dir results/$T \
+  --cfg_options runner_cfg.load_weights_cfg.init_model_weights=checkpoints/clipdr/$T.ckpt \
+  data_cfg.train_data_file=splits/train_no$T.txt data_cfg.val_data_file=splits/val_no$T.txt \
+  data_cfg.test_data_file=splits/test_$T.txt
+```
+The checkpoint with the highest AUC on the source-domain validation split is kept. Main settings (see `configs/VLM-DR.yaml`): AdamW, 31 epochs, batch size 64, learning rate 1e-5 (image encoder) and 1e-4 (prompts), 1e-8 for the text encoder and temperature (practically frozen), equal loss weights, seed 42.
 
-For questions, please open an [issue](https://github.com/DoaaDalaq/VLM-DR/issues).
+## Testing
+```bash
+CKPT=checkpoints/VLM-DR_$T.ckpt python run_test.py -c configs/VLM-DR.yaml --test_only --output_dir results/test_$T \
+  --cfg_options data_cfg.train_data_file=splits/train_no$T.txt data_cfg.val_data_file=splits/val_no$T.txt \
+  data_cfg.test_data_file=splits/test_$T.txt
+```
+
+## Checkpoints
+The trained VLM-DR checkpoints for the five target domains are available in the [v1.0 release](https://github.com/DoaaDalaq/VLM-DR/releases/tag/v1.0).
+
+## Ablations
+Add to `--cfg_options`:
+- without the projection: `runner_cfg.model_cfg.use_mlp=false`
+- without CORAL: `runner_cfg.coral_weight=0`
+- image-only classifier: `runner_cfg.model_cfg.type=ImageOnlyRN50`
+- static prompts: `runner_cfg.model_cfg.prompt_learner_cfg.init_context="a fundus image with"` `runner_cfg.model_cfg.prompt_learner_cfg.init_rank_path=<file with the five grade names>` `runner_cfg.optimizer_and_scheduler_cfg.param_dict_cfg.lr_prompt_learner_context=0` `runner_cfg.optimizer_and_scheduler_cfg.param_dict_cfg.lr_prompt_learner_ranks=0`
+
+## Qualitative results
+![qualitative](qualitative.png)
+
+## License
+MIT (see `LICENSE`). Parts of the code are adapted from CLIP-DR and OrdinalCLIP; please also respect their licenses.
